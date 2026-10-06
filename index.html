@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SAYMODZ Chat</title>
+    <style>
+        :root {
+            --bg-dark: #121417;
+            --bg-panel: #1e222a;
+            --bg-card: #282c34;
+            --border: #3b404d;
+            --accent: #5c7cfa;
+            --text: #e6e9ef;
+            --text-sub: #9ea4b0;
+            --danger: #f75b5b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            font-size: 10px;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: var(--bg-dark);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+        }
+
+        /* NETLIFY LOGOSUNU EKRAN DIŞINA TAŞIRMA */
+        #app {
+            display: flex;
+            width: 100vw;
+            height: 112vh; /* Yüksekliği uzatarak logoyu en alta itiyoruz */
+            margin-bottom: -12vh;
+            position: relative;
+            background: var(--bg-dark);
+            overflow: hidden;
+        }
+
+        /* KAYIT / GİRİŞ EKRANI */
+        .auth-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 999;
+            background: var(--bg-dark);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            height: 100vh;
+        }
+
+        .auth-box {
+            width: 100%;
+            max-width: 180px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .auth-title { font-size: 11px; font-weight: bold; color: var(--accent); margin-bottom: 2px; }
+        .auth-sub { font-size: 8px; color: var(--text-sub); margin-bottom: 8px; }
+
+        .inp {
+            width: 100%;
+            padding: 4px 6px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: #fff;
+            margin-bottom: 5px;
+            outline: none;
+            font-size: 9px;
+        }
+
+        .inp:focus { border-color: var(--accent); }
+
+        .btn {
+            width: 100%;
+            padding: 4px;
+            background: var(--accent);
+            border: none;
+            border-radius: 4px;
+            color: #fff;
+            font-weight: bold;
+            font-size: 9px;
+            cursor: pointer;
+        }
+
+        .toggle-auth { margin-top: 6px; font-size: 8px; color: var(--text-sub); cursor: pointer; }
+        .toggle-auth span { color: var(--accent); }
+
+        /* SOL DIKEY MENÜ (SIDEBAR) */
+        .sidebar {
+            width: 32px;
+            height: 100vh;
+            background: var(--bg-panel);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 4px;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .side-item {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            cursor: pointer;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-sub);
+            transition: 0.2s;
+        }
+
+        .side-item.active {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+
+        /* SAĞ ANA İÇERİK ALANI */
+        .main-container {
+            flex: 1;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* ÜST BAR */
+        .topbar {
+            height: 22px;
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 6px;
+            flex-shrink: 0;
+        }
+
+        .topbar-title {
+            font-size: 9px;
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .topbar-btns { display: flex; gap: 4px; }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 10px;
+            cursor: pointer;
+        }
+
+        /* İÇERİK PANELERİ */
+        .content {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+            background: var(--bg-dark);
+        }
+
+        .panel {
+            display: none;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+        }
+
+        .panel.active { display: flex; }
+
+        /* SOHBET */
+        .chat-body {
+            flex: 1;
+            padding: 4px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .msg-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 3px 5px;
+            max-width: 90%;
+            align-self: flex-start;
+        }
+
+        .msg-box.self {
+            align-self: flex-end;
+            background: rgba(92, 124, 250, 0.2);
+            border-color: var(--accent);
+        }
+
+        .msg-head {
+            display: flex;
+            justify-content: space-between;
+            font-size: 7.5px;
+            margin-bottom: 2px;
+        }
+
+        .msg-user { font-weight: bold; color: var(--accent); }
+        .msg-time { color: var(--text-sub); margin-left: 4px; }
+        .msg-text { font-size: 8.5px; word-break: break-word; }
+
+        .input-bar {
+            height: 24px;
+            padding: 2px 4px;
+            background: var(--bg-panel);
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 3px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        /* LİSTE ELEMANLARI */
+        .list-area {
+            flex: 1;
+            padding: 4px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .row-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg-card);
+            padding: 3px 5px;
+            border-radius: 3px;
+            border: 1px solid var(--border);
+            font-size: 8.5px;
+        }
+
+        /* MODAL */
+        .modal {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 1000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 4px;
+            height: 100vh;
+        }
+
+        .modal.active { display: flex; }
+
+        .modal-box {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-head {
+            padding: 4px 6px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            font-size: 8.5px;
+            font-weight: bold;
+        }
+
+        .modal-body {
+            flex: 1;
+            padding: 4px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        ::-webkit-scrollbar { width: 2px; }
+        ::-webkit-scrollbar-thumb { background: var(--border); }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <!-- KAYIT / GİRİŞ PANELİ -->
+    <div id="authScreen" class="auth-overlay">
+        <div class="auth-box">
+            <div class="auth-title">SAYMODZ CHAT</div>
+            <div class="auth-sub" id="authSub">Giriş Yap</div>
+
+            <input type="text" id="authU" class="inp" placeholder="Kullanıcı Adı">
+            <input type="password" id="authP" class="inp" placeholder="Şifre">
+
+            <button class="btn" id="authBtn" onclick="handleAuth()">Giriş Yap</button>
+
+            <div class="toggle-auth" onclick="toggleAuthMode()">
+                <span id="toggleTxt">Hesabın yok mu? Kayıt Ol</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- SOL DIKEY YAN MENÜ -->
+    <div class="sidebar">
+        <div class="side-item active" onclick="switchTab('chat', this)" title="Sohbet">💬</div>
+        <div class="side-item" onclick="switchTab('channels', this)" title="Kanallar">📢</div>
+        <div class="side-item" onclick="switchTab('friends', this)" title="Kişiler">👥</div>
+    </div>
+
+    <!-- SAĞ ANA PANEL -->
+    <div class="main-container">
+        <!-- ÜST BAR -->
+        <div class="topbar">
+            <div class="topbar-title" id="panelTitle">#genel</div>
+            <div class="topbar-btns">
+                <button class="icon-btn" onclick="openModal('settingsModal')">⚙️</button>
+                <button class="icon-btn" onclick="closePanel()">✕</button>
+            </div>
+        </div>
+
+        <!-- İÇERİK PANELERİ -->
+        <div class="content">
+            <!-- SOHBET PANELİ -->
+            <div id="chatPanel" class="panel active">
+                <div class="chat-body" id="messagesList"></div>
+                <div class="input-bar">
+                    <input type="text" id="chatInput" class="inp" style="margin:0;" placeholder="Mesaj..." onkeydown="if(event.key==='Enter') sendMsg()">
+                    <button class="btn" onclick="sendMsg()" style="width:20px; height:18px; padding:0;">></button>
+                </div>
+            </div>
+
+            <!-- KANALLAR PANELİ -->
+            <div id="channelsPanel" class="panel">
+                <div style="padding:2px; display:flex; gap:2px;">
+                    <input type="text" id="newChInp" class="inp" style="margin:0;" placeholder="Yeni Kanal">
+                    <button class="btn" onclick="addChannel()" style="width:35px;">Ekle</button>
+                </div>
+                <div class="list-area" id="channelsList"></div>
+            </div>
+
+            <!-- ARKADAŞLAR PANELİ -->
+            <div id="friendsPanel" class="panel">
+                <div style="padding:2px; display:flex; gap:2px;">
+                    <input type="text" id="friendInp" class="inp" style="margin:0;" placeholder="Kullanıcı ekle">
+                    <button class="btn" onclick="addFriend()" style="width:35px;">Ekle</button>
+                </div>
+                <div class="list-area" id="friendsList"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AYARLAR MODALI -->
+<div id="settingsModal" class="modal">
+    <div class="modal-box">
+        <div class="modal-head"><span>⚙️ Ayarlar</span><span onclick="closeModal('settingsModal')" style="cursor:pointer;">✕</span></div>
+        <div class="modal-body">
+            <button class="btn" style="background:var(--danger); margin-top:4px;" onclick="logout()">Oturumu Kapat</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let isRegister = false;
+    let currentUser = null;
+    let currentChannel = 'genel';
+    let dmTarget = null;
+
+    function getDB() {
+        let db = localStorage.getItem('saymodz_db');
+        if (!db) {
+            db = {
+                users: [],
+                channels: ['genel', 'duyuru'],
+                messages: [],
+                friends: {}
+            };
+            localStorage.setItem('saymodz_db', JSON.stringify(db));
+            return db;
+        }
+        return JSON.parse(db);
+    }
+
+    function saveDB(db) { localStorage.setItem('saymodz_db', JSON.stringify(db)); }
+
+    function toggleAuthMode() {
+        isRegister = !isRegister;
+        document.getElementById('authSub').innerText = isRegister ? "Kayıt Ol" : "Giriş Yap";
+        document.getElementById('authBtn').innerText = isRegister ? "Kayıt Ol" : "Giriş Yap";
+        document.getElementById('toggleTxt').innerHTML = isRegister ? "Hesabın var mı? <span>Giriş Yap</span>" : "Hesabın yok mu? <span>Kayıt Ol</span>";
+    }
+
+    function handleAuth() {
+        const u = document.getElementById('authU').value.trim();
+        const p = document.getElementById('authP').value.trim();
+        if (!u || !p) return alert("Bilgileri doldurun!");
+
+        let db = getDB();
+
+        if (isRegister) {
+            if (db.users.find(x => x.username.toLowerCase() === u.toLowerCase())) {
+                return alert("Bu kullanıcı adı zaten alınmış!");
+            }
+            db.users.push({ username: u, password: p });
+            saveDB(db);
+            alert("Kayıt başarılı!");
+            toggleAuthMode();
+        } else {
+            const user = db.users.find(x => x.username.toLowerCase() === u.toLowerCase() && x.password === p);
+            if (!user) return alert("Hatalı Kullanıcı Adı veya Şifre!");
+
+            currentUser = user;
+            localStorage.setItem('saymodz_session', user.username);
+            startApp();
+        }
+    }
+
+    window.addEventListener('load', () => {
+        try {
+            const session = localStorage.getItem('saymodz_session');
+            if (session) {
+                let db = getDB();
+                const u = db.users.find(x => x.username === session);
+                if (u) {
+                    currentUser = u;
+                    startApp();
+                    return;
+                }
+            }
+        } catch(e) {}
+        document.getElementById('authScreen').style.display = 'flex';
+    });
+
+    function logout() {
+        localStorage.removeItem('saymodz_session');
+        location.reload();
+    }
+
+    function startApp() {
+        document.getElementById('authScreen').style.display = 'none';
+        renderChannels();
+        renderMessages();
+        renderFriends();
+    }
+
+    function switchTab(tab, el) {
+        document.querySelectorAll('.side-item').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+
+        if (tab === 'chat') {
+            document.getElementById('chatPanel').classList.add('active');
+            document.getElementById('panelTitle').innerText = dmTarget ? "✉ " + dmTarget : "#" + currentChannel;
+        } else if (tab === 'channels') {
+            document.getElementById('channelsPanel').classList.add('active');
+            document.getElementById('panelTitle').innerText = "📢 Kanallar";
+        } else if (tab === 'friends') {
+            document.getElementById('friendsPanel').classList.add('active');
+            document.getElementById('panelTitle').innerText = "👥 Kişiler";
+        }
+        if (el) el.classList.add('active');
+    }
+
+    function renderChannels() {
+        const db = getDB();
+        const list = document.getElementById('channelsList');
+        list.innerHTML = '';
+
+        db.channels.forEach(ch => {
+            const row = document.createElement('div');
+            row.className = 'row-item';
+            row.innerHTML = `
+                <span># ${ch}</span>
+                <button class="btn" style="width: auto; padding: 1px 4px;" onclick="goChannel('${ch}')">Gir</button>
+            `;
+            list.appendChild(row);
+        });
+    }
+
+    function addChannel() {
+        const chName = document.getElementById('newChInp').value.trim();
+        if (!chName) return;
+
+        let db = getDB();
+        if (!db.channels.includes(chName)) {
+            db.channels.push(chName);
+            saveDB(db);
+            renderChannels();
+            document.getElementById('newChInp').value = '';
+        }
+    }
+
+    function goChannel(chName) {
+        currentChannel = chName;
+        dmTarget = null;
+        switchTab('chat', document.querySelectorAll('.side-item')[0]);
+        renderMessages();
+    }
+
+    function sendMsg() {
+        const input = document.getElementById('chatInput');
+        const text = input.value.trim();
+        if (!text) return;
+
+        let db = getDB();
+
+        db.messages.push({
+            id: Date.now(),
+            channel: currentChannel,
+            dmTarget: dmTarget,
+            sender: currentUser.username,
+            text: text,
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        });
+
+        saveDB(db);
+        input.value = '';
+        renderMessages();
+    }
+
+    function renderMessages() {
+        const db = getDB();
+        const list = document.getElementById('messagesList');
+        list.innerHTML = '';
+
+        const filtered = db.messages.filter(m => {
+            if (dmTarget) {
+                return (m.sender === currentUser.username && m.dmTarget === dmTarget) || (m.sender === dmTarget && m.dmTarget === currentUser.username);
+            }
+            return m.channel === currentChannel && !m.dmTarget;
+        });
+
+        filtered.forEach(m => {
+            const isSelf = m.sender === currentUser.username;
+            const card = document.createElement('div');
+            card.className = `msg-box ${isSelf ? 'self' : ''}`;
+            card.innerHTML = `
+                <div class="msg-head">
+                    <span class="msg-user">${m.sender}</span>
+                    <span class="msg-time">${m.time}</span>
+                </div>
+                <div class="msg-text">${escapeHtml(m.text)}</div>
+            `;
+            list.appendChild(card);
+        });
+
+        list.scrollTop = list.scrollHeight;
+    }
+
+    function addFriend() {
+        const target = document.getElementById('friendInp').value.trim();
+        if (!target) return;
+
+        let db = getDB();
+        if (!db.friends[currentUser.username]) db.friends[currentUser.username] = [];
+        if (!db.friends[currentUser.username].includes(target)) {
+            db.friends[currentUser.username].push(target);
+            saveDB(db);
+            document.getElementById('friendInp').value = '';
+            renderFriends();
+        }
+    }
+
+    function renderFriends() {
+        const db = getDB();
+        const list = document.getElementById('friendsList');
+        list.innerHTML = '';
+
+        const myFriends = db.friends[currentUser.username] || [];
+        myFriends.forEach(f => {
+            const row = document.createElement('div');
+            row.className = 'row-item';
+            row.innerHTML = `<span>${f}</span><button class="btn" style="width: auto; padding: 1px 4px;" onclick="openDM('${f}')">DM</button>`;
+            list.appendChild(row);
+        });
+    }
+
+    function openDM(target) {
+        dmTarget = target;
+        currentChannel = null;
+        switchTab('chat', document.querySelectorAll('.side-item')[0]);
+        renderMessages();
+    }
+
+    function openModal(id) { document.getElementById(id).classList.add('active'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+    function closePanel() {
+        if (window.AndroidInterface && window.AndroidInterface.closeChat) {
+            window.AndroidInterface.closeChat();
+        } else {
+            document.getElementById('app').style.display = 'none';
+        }
+    }
+
+    function escapeHtml(str) {
+        return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+</script>
+</body>
+</html>
